@@ -21,6 +21,7 @@ public class ReadSocket {
 
 	public void start() {
 		System.out.println("Reader is started..");
+		
 
 		try {
 
