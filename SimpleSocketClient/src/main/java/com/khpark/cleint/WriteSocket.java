@@ -32,8 +32,8 @@ public class WriteSocket {
 			ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
 
 			try {
-
 				System.out.print("# " + id + "(나) ] ");
+
 				while (!Thread.currentThread().isInterrupted()) {
 					buffer.clear();
 					BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -48,6 +48,8 @@ public class WriteSocket {
 					buffer.flip();
 
 					socketChannel.write(buffer);
+					System.out.println();
+					System.out.print("# " + id + "(나) ] ");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();

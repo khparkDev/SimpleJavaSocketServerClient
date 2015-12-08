@@ -44,9 +44,6 @@ public class ReadSocket {
 		}
 	}
 
-	/**
-	 * @param key
-	 */
 	private void read(SelectionKey key) {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 		ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
