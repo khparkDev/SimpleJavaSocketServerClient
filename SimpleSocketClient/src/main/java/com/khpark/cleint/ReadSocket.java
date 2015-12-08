@@ -13,15 +13,15 @@ import java.util.StringTokenizer;
 
 public class ReadSocket {
 	private static final CharsetDecoder CAHRSET_DECODER = Charset.forName("UTF-8").newDecoder();
-	private String id;
+	private WindowPanelControl wpc;
 	private Selector selector = null;
 
-	public ReadSocket(Selector selector, String id) {
+	public ReadSocket(Selector selector, WindowPanelControl wpc) {
 		this.selector = selector;
-		this.id = id;
+		this.wpc = wpc;
 	}
 
-	public void start(String id) {
+	public void start() {
 		try {
 
 			while (true) {
@@ -85,9 +85,8 @@ public class ReadSocket {
 			idx++;
 		}
 
-		if (!id.equals(senderId)) {
-			System.out.println();
-			System.out.println("# " + senderId + " ] " + message);
+		if (!wpc.getId().equals(senderId)) {
+			wpc.setMessage(" " + senderId + " : " + message);
 		}
 
 		if (buffer != null) {

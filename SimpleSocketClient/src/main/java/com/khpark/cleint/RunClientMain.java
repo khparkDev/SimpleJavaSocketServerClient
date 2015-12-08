@@ -1,11 +1,20 @@
 package com.khpark.cleint;
 
+import java.net.InetAddress;
+
+import javax.swing.JFrame;
+
 /**
- * new SimpleClient("사용할이름", "연결할 서버아이피", 서버포트번호);
+ * setHostInfo에 "사용할이름", "연결할 서버아이피", 서버포트번호를 입력한 뒤 실행시킵니다.
  *
  */
-public class RunClientMain {
+@SuppressWarnings("serial")
+public class RunClientMain extends JFrame {
+
 	public static void main(String... args) throws Exception {
-		new SimpleClient("테스트2", "10.5.220.124", 12000).initClient().startClient();
+		String hostName = InetAddress.getLocalHost().getHostName();
+		WindowPanelControl wpc = new WindowPanelControl(hostName);
+		wpc.showPanel();
+		SimpleClient.INSTANCE.setHostInfo("10.5.220.124", 20000).addPanel(wpc).initClient().startClient();
 	}
 }

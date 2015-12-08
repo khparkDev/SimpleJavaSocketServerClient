@@ -6,19 +6,21 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-public class SimpleClient {
+public enum SimpleClient {
+	INSTANCE;
+
 	private ReadSocket readSocket;
 	private WriteSocket writeSocket;
 	private Selector selector = null;
 	private SocketChannel socketChannel = null;
-	private String id;
 	private String hostIp;
 	private int port;
+	private WindowPanelControl wpc;
 
-	public SimpleClient(String id, String hostIp, int port) {
-		this.id = id;
+	public SimpleClient setHostInfo(String hostIp, int port) {
 		this.hostIp = hostIp;
 		this.port = port;
+		return this;
 	}
 
 	public SimpleClient initClient() throws IOException {
@@ -27,15 +29,23 @@ public class SimpleClient {
 		socketChannel.configureBlocking(false);
 		socketChannel.register(selector, SelectionKey.OP_READ);
 
-		readSocket = new ReadSocket(selector, id);
-		writeSocket = new WriteSocket(socketChannel);
+		readSocket = new ReadSocket(selector, wpc);
+		writeSocket = new WriteSocket(socketChannel, wpc);
 
 		return this;
 	}
 
 	public SimpleClient startClient() {
-		writeSocket.start(id);
-		readSocket.start(id);
+		readSocket.start();
+		return this;
+	}
+
+	public void sendMessage(String message) {
+		writeSocket.start(message);
+	}
+
+	public SimpleClient addPanel(WindowPanelControl wpc) {
+		this.wpc = wpc;
 		return this;
 	}
 }
