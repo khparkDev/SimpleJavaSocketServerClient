@@ -29,6 +29,7 @@ public class WindowPanelControl {
 	}
 
 	public void setMessage(String message) {
+		mainFrame.toFront();
 		textArea.append("\n");
 		textArea.append(message);
 	}
