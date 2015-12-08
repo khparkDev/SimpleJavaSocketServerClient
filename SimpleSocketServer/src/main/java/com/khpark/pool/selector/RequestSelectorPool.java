@@ -5,16 +5,16 @@ import java.nio.channels.Selector;
 import java.util.Iterator;
 
 import com.khpark.pool.selector.handler.RequestHandler;
-import com.khpark.queue.Queue;
+import com.khpark.queue.BlockingMessageQueue;
 
-public class RequestSelectorPool extends SelectorPoolAdaptorImpl {
-	private Queue queue = null;
+public class RequestSelectorPool extends AbstractSelectorPool {
+	private BlockingMessageQueue queue = null;
 
-	public RequestSelectorPool(Queue queue) {
+	public RequestSelectorPool(BlockingMessageQueue queue) {
 		this(queue, 2);
 	}
 
-	public RequestSelectorPool(Queue queue, int size) {
+	public RequestSelectorPool(BlockingMessageQueue queue, int size) {
 		super.size = size;
 		this.queue = queue;
 		init();
@@ -26,33 +26,29 @@ public class RequestSelectorPool extends SelectorPoolAdaptorImpl {
 		}
 	}
 
-	protected Thread createHandler(int index) {
+	protected Runnable createHandler(int index) {
 		Selector selector = null;
+
 		try {
 			selector = Selector.open();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		Thread handler = new RequestHandler(queue, selector, index);
 
-		return handler;
+		Runnable r = new RequestHandler(queue, selector, index);
+		executors().submit(r);
+
+		return r;
 	}
 
 	public void startAll() {
-		Iterator<Thread> iter = pool.iterator();
-		while (iter.hasNext()) {
-			Thread handler = (Thread) iter.next();
-			handler.start();
+		for (Iterator<Runnable> it = pool.iterator(); it.hasNext();) {
+			executors().submit(it.next());
 		}
 	}
 
 	public void stopAll() {
-		Iterator<Thread> iter = pool.iterator();
-		while (iter.hasNext()) {
-			Thread handler = (Thread) iter.next();
-			handler.interrupt();
-			handler = null;
-		}
+		//TODO 종료 처리
 	}
 
 }

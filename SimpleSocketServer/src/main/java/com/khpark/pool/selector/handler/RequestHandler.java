@@ -1,40 +1,40 @@
 package com.khpark.pool.selector.handler;
 
+import static com.khpark.common.Constants.READ_EVENT;
+
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
-import com.khpark.event.Job;
-import com.khpark.event.NIOEvent;
-import com.khpark.queue.ChattingRoom;
-import com.khpark.queue.Queue;
+import com.khpark.common.SessionMap;
+import com.khpark.queue.BlockingMessageQueue;
+import com.khpark.queue.ChatChannel;
 
-public class RequestHandler extends HandlerAdaptor {
-	private Queue queue = null;
+public class RequestHandler implements Runnable {
+	private BlockingMessageQueue queue = null;
 	private Selector selector = null;
-	private String name = "RequestHandler-";
+	private String name = "@@ RequestHandler[";
 
 	private Vector<SocketChannel> newClients = new Vector<SocketChannel>();
 
-	public RequestHandler(Queue queue, Selector selector, int index) {
+	public RequestHandler(BlockingMessageQueue queue, Selector selector, int index) {
 		this.queue = queue;
 		this.selector = selector;
-		setName(name + index);
+		this.name = name + index + "]";
 	}
 
 	public void run() {
 		try {
-			
-			while (!Thread.currentThread().isInterrupted()) {
+
+			while (true) {
 				processNewConnection();
 				int keysReady = selector.select(1000);
-				System.out.println("@RequestHandler(" + getName() + ") selected : " + keysReady);
-				
+
 				if (keysReady > 0) {
 					processRequest();
 				}
@@ -45,19 +45,19 @@ public class RequestHandler extends HandlerAdaptor {
 	}
 
 	private synchronized void processNewConnection() throws ClosedChannelException {
-		Iterator<SocketChannel> it = newClients.iterator();
-		
-		while (it.hasNext()) {
+		for (Iterator<SocketChannel> it = newClients.iterator(); it.hasNext();) {
 			SocketChannel sc = it.next();
 			sc.register(selector, SelectionKey.OP_READ);
-			ChattingRoom.getInstance().add(sc);
-			System.out.println("@RequestHandler(" + getName() + ") success regist : " + sc.toString());
+			ChatChannel.getInstance().add(sc);
+			System.out.println(name + " 클라이언트의 요청을 처리할 준비가 되었습니다.");
 		}
+
 		newClients.clear();
 	}
 
 	private void processRequest() {
 		Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+
 		while (it.hasNext()) {
 			SelectionKey key = it.next();
 			it.remove();
@@ -66,9 +66,9 @@ public class RequestHandler extends HandlerAdaptor {
 	}
 
 	private void pushMyJob(SelectionKey key) {
-		Map<String, SelectionKey> session = new HashMap<String, SelectionKey>();
+		Map<String, SelectionKey> session = new ConcurrentHashMap<String, SelectionKey>();
 		session.put("SelectionKey", key);
-		Job job = new Job(NIOEvent.READ_EVENT, session);
+		SessionMap job = new SessionMap(READ_EVENT, session);
 		queue.push(job);
 	}
 

@@ -4,23 +4,27 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class WriteSocket {
+	private String id;
 	private SocketChannel socketChannel = null;
+	private ExecutorService executor = Executors.newFixedThreadPool(1);
 
 	public WriteSocket(SocketChannel socketChannel) {
 		this.socketChannel = socketChannel;
 	}
 
-	public void start() {
-		Thread t = new WorkerThread(socketChannel);
-		t.start();
+	public void start(String id) {
+		this.id = id;
+		executor.submit(new WriteSocketThread(socketChannel));
 	}
 
-	private class WorkerThread extends Thread {
+	private class WriteSocketThread implements Runnable {
 		private SocketChannel socketChannel = null;
 
-		public WorkerThread(SocketChannel socketChannel) {
+		public WriteSocketThread(SocketChannel socketChannel) {
 			this.socketChannel = socketChannel;
 		}
 
@@ -28,6 +32,8 @@ public class WriteSocket {
 			ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
 
 			try {
+
+				System.out.print("# " + id + "(나) ] ");
 				while (!Thread.currentThread().isInterrupted()) {
 					buffer.clear();
 					BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -37,13 +43,14 @@ public class WriteSocket {
 						System.exit(0);
 					}
 
-					buffer.put(message.getBytes());
+					String sendMessage = id + Constants.DELIMETER + message;
+					buffer.put(sendMessage.getBytes());
 					buffer.flip();
 
 					socketChannel.write(buffer);
 				}
 			} catch (Exception e) {
-				System.out.println("MyThread.run()");
+				e.printStackTrace();
 			} finally {
 				if (buffer != null) {
 					buffer.clear();
@@ -52,5 +59,4 @@ public class WriteSocket {
 			}
 		}
 	}
-
 }

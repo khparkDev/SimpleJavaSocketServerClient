@@ -1,16 +1,136 @@
 package com.khpark.pool.buffer;
 
+import static com.khpark.common.Constants.FILE_BLOCKSIZE;
+import static com.khpark.common.Constants.MEMORY_BLOCKSIZE;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface ByteBufferPool {
-	public ByteBuffer getMemoryBuffer();
+public class ByteBufferPool {
+	private final List<ByteBuffer> memoryQueue = new ArrayList<ByteBuffer>();
+	private final List<ByteBuffer> fileQueue = new ArrayList<ByteBuffer>();
+	private boolean isWait = false;
 
-	public ByteBuffer getFileBuffer();
+	public ByteBufferPool(int memorySize, int fileSize, File file) throws IOException {
+		if (memorySize > 0) {
+			initMemoryBuffer(memorySize);
+		}
 
-	public void putBuffer(ByteBuffer buffer);
+		if (fileSize > 0) {
+			initFileBuffer(fileSize, file);
+		}
+	}
 
-	public void setWait(boolean wait);
+	private void initMemoryBuffer(int size) {
+		int bufferCount = size / MEMORY_BLOCKSIZE;
+		size = bufferCount * MEMORY_BLOCKSIZE;
+		ByteBuffer directBuf = ByteBuffer.allocateDirect(size);
+		divideBuffer(directBuf, MEMORY_BLOCKSIZE, memoryQueue);
+	}
 
-	public boolean isWait();
+	private void initFileBuffer(int size, File f) throws IOException {
+		int bufferCount = size / FILE_BLOCKSIZE;
+		size = bufferCount * FILE_BLOCKSIZE;
+		RandomAccessFile file = new RandomAccessFile(f, "rw");
 
+		try {
+			file.setLength(size);
+			ByteBuffer fileBuffer = file.getChannel().map(FileChannel.MapMode.READ_WRITE, 0L, size);
+			divideBuffer(fileBuffer, FILE_BLOCKSIZE, fileQueue);
+		} finally {
+			file.close();
+		}
+	}
+
+	private void divideBuffer(ByteBuffer buf, int blockSize, List<ByteBuffer> list) {
+		int bufferCount = buf.capacity() / blockSize;
+		int position = 0;
+
+		for (int i = 0; i < bufferCount; i++) {
+			int max = position + blockSize;
+			buf.limit(max);
+			list.add(buf.slice());
+			position = max;
+			buf.position(position);
+		}
+	}
+
+	public ByteBuffer getMemoryBuffer() {
+		return getBuffer(memoryQueue, fileQueue);
+	}
+
+	public ByteBuffer getFileBuffer() {
+		return getBuffer(fileQueue, memoryQueue);
+	}
+
+	private ByteBuffer getBuffer(List<ByteBuffer> firstQueue, List<ByteBuffer> secondQueue) {
+		ByteBuffer buffer = getBuffer(firstQueue, false);
+
+		if (buffer == null) {
+			buffer = getBuffer(secondQueue, false);
+
+			if (buffer == null) {
+				buffer = (isWait) ? getBuffer(firstQueue, true) : ByteBuffer.allocate(MEMORY_BLOCKSIZE);
+			}
+		}
+
+		return buffer;
+	}
+
+	private ByteBuffer getBuffer(List<ByteBuffer> queue, boolean wait) {
+		synchronized (queue) {
+
+			if (queue.isEmpty()) {
+
+				if (wait) {
+
+					try {
+						queue.wait();
+					} catch (InterruptedException e) {
+						return null;
+					}
+				} else {
+					return null;
+				}
+			}
+
+			return (ByteBuffer) queue.remove(0);
+		}
+	}
+
+	public void putBuffer(ByteBuffer buffer) {
+		if (buffer.isDirect()) {
+
+			switch (buffer.capacity()) {
+				case MEMORY_BLOCKSIZE :
+					putBuffer(buffer, memoryQueue);
+					break;
+				case FILE_BLOCKSIZE :
+					putBuffer(buffer, fileQueue);
+					break;
+			}
+		}
+	}
+
+	private void putBuffer(ByteBuffer buffer, List<ByteBuffer> queue) {
+		buffer.clear();
+
+		synchronized (queue) {
+			queue.add(buffer);
+			queue.notify();
+		}
+	}
+
+	public synchronized void setWait(boolean wait) {
+		this.isWait = wait;
+	}
+
+	public synchronized boolean isWait() {
+		return isWait;
+	}
 }

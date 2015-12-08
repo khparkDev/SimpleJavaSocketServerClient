@@ -9,29 +9,26 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.util.Iterator;
+import java.util.StringTokenizer;
 
 public class ReadSocket {
-	private static final Charset charset = Charset.forName("UTF-8");;
-	private static final CharsetDecoder decoder = charset.newDecoder();;
+	private static final CharsetDecoder CAHRSET_DECODER = Charset.forName("UTF-8").newDecoder();
+	private String id;
 	private Selector selector = null;
 
-	public ReadSocket(Selector selector) {
+	public ReadSocket(Selector selector, String id) {
 		this.selector = selector;
+		this.id = id;
 	}
 
-	public void start() {
-		System.out.println("Reader is started..");
-		
-
+	public void start(String id) {
 		try {
 
 			while (true) {
-				System.out.print("[ message ] : ");
 				selector.select();
-				Iterator<SelectionKey> it = selector.selectedKeys().iterator();
 
-				while (it.hasNext()) {
-					SelectionKey key = (SelectionKey) it.next();
+				for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext();) {
+					SelectionKey key = it.next();
 
 					if (key.isReadable()) {
 						read(key);
@@ -43,10 +40,13 @@ public class ReadSocket {
 				System.out.println();
 			}
 		} catch (Exception e) {
-			System.out.println("SimpleChatClient.startServer()");
+			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * @param key
+	 */
 	private void read(SelectionKey key) {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 		ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
@@ -54,9 +54,11 @@ public class ReadSocket {
 		try {
 			socketChannel.read(buffer);
 		} catch (IOException e) {
+
 			try {
 				socketChannel.close();
 			} catch (IOException e1) {
+				e1.printStackTrace();
 			}
 		}
 
@@ -64,12 +66,32 @@ public class ReadSocket {
 		String data = "";
 
 		try {
-			data = decoder.decode(buffer).toString();
+			data = CAHRSET_DECODER.decode(buffer).toString();
 		} catch (CharacterCodingException e) {
-			System.out.println("SimpleChatClient.read()");
+			e.printStackTrace();
 		}
 
-		System.out.println("[Received Message ] : " + data);
+		String senderId = "";
+		String message = "";
+		StringTokenizer st = new StringTokenizer(data, Constants.DELIMETER);
+		int idx = 0;
+
+		while (st.hasMoreTokens()) {
+			String dt = st.nextToken();
+
+			if (idx == 0) {
+				senderId = dt;
+			} else {
+				message = dt;
+			}
+
+			idx++;
+		}
+
+		if (!id.equals(senderId)) {
+			System.out.println();
+			System.out.println("# " + senderId + " ] " + message);
+		}
 
 		if (buffer != null) {
 			buffer.clear();

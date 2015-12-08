@@ -1,16 +1,15 @@
-package com.khpark.event;
+package com.khpark.common;
 
 import java.util.Map;
 
-public class Job {
+public class SessionMap {
 	private int eventType;
 	private Map<?, ?> session = null;
 
-	@SuppressWarnings("unused")
-    private Job() {
+    public SessionMap() {
 	}
 
-	public Job(int eventType, Map<?, ?> session) {
+	public SessionMap(int eventType, Map<?, ?> session) {
 		this.eventType = eventType;
 		this.session = session;
 	}

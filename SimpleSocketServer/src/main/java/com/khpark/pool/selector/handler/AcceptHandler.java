@@ -1,5 +1,7 @@
 package com.khpark.pool.selector.handler;
 
+import static com.khpark.common.Constants.ACCEPT_EVENT;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -7,25 +9,24 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import com.khpark.event.Job;
-import com.khpark.event.NIOEvent;
-import com.khpark.queue.Queue;
+import com.khpark.common.SessionMap;
+import com.khpark.queue.BlockingMessageQueue;
 
-public class AcceptHandler extends Thread {
-	private Queue queue = null;
+public class AcceptHandler implements Runnable {
+	private BlockingMessageQueue queue = null;
 	private Selector selector = null;
 	private int port;
-	private String name = "AcceptHandler-";
+	private String name = "";
 
-	public AcceptHandler(Queue queue, Selector selector, int port, int index) {
+	public AcceptHandler(BlockingMessageQueue queue, Selector selector, int port, int index) {
 		this.queue = queue;
 		this.selector = selector;
 		this.port = port;
-		setName(name + index);
+		this.name = ":: AcceptHandler[" + index + "]";
 		init();
 	}
 
@@ -33,12 +34,9 @@ public class AcceptHandler extends Thread {
 		try {
 			ServerSocketChannel ssc = ServerSocketChannel.open();
 			ssc.configureBlocking(false);
-
 			InetSocketAddress address = new InetSocketAddress(InetAddress.getLocalHost(), port);
 			ssc.socket().bind(address);
-
-			System.out.println("@AcceptHandler(" + getName() + ") Bound to " + address);
-
+			System.out.println(this.name + "가 초기화 되었습니다.");
 			ssc.register(this.selector, SelectionKey.OP_ACCEPT);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -47,34 +45,38 @@ public class AcceptHandler extends Thread {
 
 	public void run() {
 		try {
-			while (!Thread.currentThread().isInterrupted()) {
+			while (true) {
 				selector.select();
 				acceptPendingConnections();
 			}
 		} catch (Exception e) {
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 	}
 
 	private void acceptPendingConnections() throws Exception {
-		Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
-		while (iter.hasNext()) {
-			SelectionKey key = (SelectionKey) iter.next();
-			iter.remove();
+		Iterator<SelectionKey> it = selector.selectedKeys().iterator();
 
-			ServerSocketChannel readyChannel = (ServerSocketChannel) key.channel();
-			SocketChannel sc = readyChannel.accept();
+		while (it.hasNext()) {
+			SelectionKey key = (SelectionKey) it.next();
+			it.remove();
 
-			System.out.println("@AcceptHandler(" + getName() + ") connection accepted from " + sc.socket().getInetAddress());
+			if (key != null) {
+				ServerSocketChannel readyChannel = (ServerSocketChannel) key.channel();
+				SocketChannel sc = readyChannel.accept();
 
-			pushMyJob(sc);
+				if (sc != null) {
+					pushMyJob(sc);
+					System.out.println(sc.socket().getInetAddress() + "클라이언트가 접속되었습니다.");
+				}
+			}
 		}
 	}
 
 	private void pushMyJob(SocketChannel sc) {
-		Map<String, SocketChannel> session = new HashMap<String, SocketChannel>();
+		Map<String, SocketChannel> session = new ConcurrentHashMap<String, SocketChannel>();
 		session.put("SocketChannel", sc);
-		Job job = new Job(NIOEvent.ACCEPT_EVENT, session);
+		SessionMap job = new SessionMap(ACCEPT_EVENT, session);
 		queue.push(job);
 	}
 

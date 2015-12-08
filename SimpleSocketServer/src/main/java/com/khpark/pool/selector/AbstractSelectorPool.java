@@ -2,30 +2,35 @@ package com.khpark.pool.selector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public abstract class SelectorPoolAdaptorImpl implements SelectorPool {
+public abstract class AbstractSelectorPool {
+	private ExecutorService executors = Executors.newCachedThreadPool();
 	protected int size = 2;
 	private int roundRobinIndex = 0;
 	private final Object monitor = new Object();
-	protected final List<Thread> pool = new ArrayList<Thread>();
+	protected final List<Runnable> pool = new ArrayList<Runnable>();
 
-	protected abstract Thread createHandler(int index);
+	protected abstract Runnable createHandler(int index);
 
 	public abstract void startAll();
 
 	public abstract void stopAll();
 
-	public Thread get() {
+	public Runnable get() {
 		synchronized (monitor) {
-			return (Thread) pool.get(roundRobinIndex++ % size);
+			return (Runnable) pool.get(roundRobinIndex++ % size);
 		}
 	}
 
-	public void put(Thread handler) {
+	public void put(Runnable handler) {
 		synchronized (monitor) {
+
 			if (handler != null) {
 				pool.add(handler);
 			}
+
 			monitor.notify();
 		}
 	}
@@ -42,4 +47,7 @@ public abstract class SelectorPoolAdaptorImpl implements SelectorPool {
 		}
 	}
 
+	public ExecutorService executors() {
+		return this.executors;
+	}
 }

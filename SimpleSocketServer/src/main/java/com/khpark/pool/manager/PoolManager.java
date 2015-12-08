@@ -1,38 +1,41 @@
 package com.khpark.pool.manager;
 
-import java.util.HashMap;
+import static com.khpark.common.Constants.ASP;
+import static com.khpark.common.Constants.BBP;
+import static com.khpark.common.Constants.RSP;
+
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.khpark.pool.buffer.ByteBufferPool;
-import com.khpark.pool.selector.SelectorPool;
+import com.khpark.pool.selector.AbstractSelectorPool;
 
 public enum PoolManager {
 	INSTANCE;
+	private static Map<String, Object> map = new ConcurrentHashMap<String, Object>();
 
-	private static Map<String, Object> map = new HashMap<String, Object>();
-
-	public static void registAcceptSelectorPool(SelectorPool selectorPool) {
-		map.put("AcceptSelectorPool", selectorPool);
+	public static void registAcceptSelectorPool(AbstractSelectorPool selectorPool) {
+		map.put(ASP, selectorPool);
 	}
 
-	public static void registRequestSelectorPool(SelectorPool selectorPool) {
-		map.put("RequestSelectorPool", selectorPool);
+	public static void registRequestSelectorPool(AbstractSelectorPool selectorPool) {
+		map.put(RSP, selectorPool);
 	}
 
-	public static SelectorPool getAcceptSelectorPool() {
-		return (SelectorPool) map.get("AcceptSelectorPool");
+	public static AbstractSelectorPool getAcceptSelectorPool() {
+		return (AbstractSelectorPool) map.get(ASP);
 	}
 
-	public static SelectorPool getRequestSelectorPool() {
-		return (SelectorPool) map.get("RequestSelectorPool");
+	public static AbstractSelectorPool getRequestSelectorPool() {
+		return (AbstractSelectorPool) map.get(RSP);
 	}
 
 	public static void registByteBufferPool(ByteBufferPool byteBufferPool) {
-		map.put("ByteBufferPool", byteBufferPool);
+		map.put(BBP, byteBufferPool);
 	}
 
 	public static ByteBufferPool getByteBufferPool() {
-		return (ByteBufferPool) map.get("ByteBufferPool");
+		return (ByteBufferPool) map.get(BBP);
 	}
 
 }

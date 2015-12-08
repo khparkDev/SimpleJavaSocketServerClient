@@ -11,30 +11,31 @@ public class SimpleClient {
 	private WriteSocket writeSocket;
 	private Selector selector = null;
 	private SocketChannel socketChannel = null;
+	private String id;
 	private String hostIp;
 	private int port;
 
-	public SimpleClient(String hostIp, int port) {
+	public SimpleClient(String id, String hostIp, int port) {
+		this.id = id;
 		this.hostIp = hostIp;
 		this.port = port;
 	}
 
-	public void initClient() throws IOException {
-		try {
-			selector = Selector.open();
-			socketChannel = SocketChannel.open(new InetSocketAddress(hostIp, port));
-			socketChannel.configureBlocking(false);
-			socketChannel.register(selector, SelectionKey.OP_READ);
+	public SimpleClient initClient() throws IOException {
+		selector = Selector.open();
+		socketChannel = SocketChannel.open(new InetSocketAddress(hostIp, port));
+		socketChannel.configureBlocking(false);
+		socketChannel.register(selector, SelectionKey.OP_READ);
 
-			readSocket = new ReadSocket(selector);
-			writeSocket = new WriteSocket(socketChannel);
-		} catch (IOException e) {
-			throw new IOException();
-		}
+		readSocket = new ReadSocket(selector, id);
+		writeSocket = new WriteSocket(socketChannel);
+
+		return this;
 	}
 
-	public void startClient() {
-		writeSocket.start();
-		readSocket.start();
+	public SimpleClient startClient() {
+		writeSocket.start(id);
+		readSocket.start(id);
+		return this;
 	}
 }

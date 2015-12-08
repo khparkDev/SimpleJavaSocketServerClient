@@ -1,31 +1,19 @@
 package com.khpark.main;
 
-import com.khpark.server.AdvancedServer;
+import java.net.UnknownHostException;
 
+import com.khpark.server.Server;
+
+/**
+ * new AdvancedServer(띄울포트번호, OS타입)
+ * new AdvancedServer(서버아이피, 띄울포트번호, OS타입)
+ * 
+ * @author khpark
+ *
+ */
 public class RunServerMain {
 
-	public static void main(String[] args) {
-		if (args.length < 2) {
-			System.out.println("----------- usage --------------");
-			System.out.println("RunServerMain [port_num] [osType-> 1:win, 2:linux]");
-			System.exit(0);
-		}
-		
-		int portNum = Integer.parseInt(args[0]);
-		int osType = Integer.parseInt(args[1]);
-
-		/*
-		if (portNum >= 10000 || portNum < 1000) {
-			System.out.println("error : port range is 1001 ~ 9999.");
-			System.exit(0);
-		}
-		*/
-
-		if (osType > 2 && osType < 1) {
-			System.exit(0);
-		}
-
-		// normal execute
-		new AdvancedServer(portNum, osType);
+	public static void main(String[] args) throws UnknownHostException {
+		new Server(12000, 1);
 	}
 }

@@ -1,10 +1,11 @@
 package com.khpark.cleint;
 
-
+/**
+ * new SimpleClient("사용할이름", "연결할 서버아이피", 서버포트번호);
+ *
+ */
 public class RunClientMain {
 	public static void main(String... args) throws Exception {
-		SimpleClient scc = new SimpleClient("10.10.11.21", 2000);
-		scc.initClient();
-		scc.startClient();
+		new SimpleClient("테스트2", "10.5.220.124", 12000).initClient().startClient();
 	}
 }
