@@ -14,6 +14,6 @@ import com.khpark.server.Server;
 public class RunServerMain {
 
 	public static void main(String[] args) throws UnknownHostException {
-		new Server(12000, 1);
+		new Server(20000, 1);
 	}
 }
