@@ -70,10 +70,10 @@ public class ReadSocket {
 
 		String senderId = "";
 		String message = "";
-		StringTokenizer st = new StringTokenizer(data, Constants.DELIMETER);
 		int idx = 0;
+		StringTokenizer st = new StringTokenizer(data, Constants.DELIMETER);
 
-		while (st.hasMoreTokens()) {
+		while (st.hasMoreElements()) {
 			String dt = st.nextToken();
 
 			if (idx == 0) {

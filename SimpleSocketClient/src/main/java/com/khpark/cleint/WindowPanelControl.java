@@ -23,7 +23,9 @@ public class WindowPanelControl {
 	}
 
 	public WindowPanelControl(String id) {
-		idtf = new TextField(15);
+		textArea.setEditable(false);
+		idtf = new TextField(50);
+		idtf.setColumns(10);
 		idtf.setText(id);
 		prepareGUI();
 	}
